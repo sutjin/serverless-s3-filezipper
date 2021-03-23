@@ -24,6 +24,7 @@ provider:
   name: aws
   runtime: nodejs12.x
   region: us-west-2
+  timeout: 600
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -32,24 +33,20 @@ provider:
         - "s3:GetObject"
         - "s3:PutObjectAcl"
       Resource:
-        Fn::Join:
+        - Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - Ref: TestBucket
+            - "image-processor-nabil"
             - "/*"
+        - Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "image-processor-nabil"
 
-layers:
-  archiver:
-    #refer as ArchiverLambdaLayer
-    path: ./Layers/archiver
-  stream:
-    #refer as StreamLambdaLayer
-    path: ./Layers/stream
-Zip:
-  handler: handler.execute
-  layers:
-    - { Ref: ArchiverLambdaLayer }
-    - { Ref: StreamLambdaLayer }
+functions:
+  Zip:
+    handler: handler.execute
 
 plugins:
   - serverless-bundle
+  - serverless-offline
