@@ -50,9 +50,11 @@ export const execute = async (event) => {
   });
 
   await new Promise((resolve, reject) => {
-    s3Upload.on("close", resolve());
-    s3Upload.on("end", resolve());
-    s3Upload.on("error", reject());
+    console.log("starting upload");
+
+    streamPassThrough.on("close", resolve);
+    streamPassThrough.on("end", resolve);
+    streamPassThrough.on("error", reject);
 
     archive.pipe(streamPassThrough);
     s3FileDwnldStreams.forEach(s3FileDwnldStream => {
@@ -61,12 +63,15 @@ export const execute = async (event) => {
       });
     });
     archive.finalize();
+    console.log('Stream finalized');
   }).catch(error => {
     console.error("ArchiveError");
     throw new Error(`${error.code} ${error.message} ${error.data}`);
   });
 
-  await s3Upload.promise();
+  await s3Upload.promise().catch(_err => {
+      console.log('Error Is : ' + _err);
+  });
 };
 
 function validateEvent(event) {
@@ -99,6 +104,7 @@ function listAllKeys(allKeys, params, resolve, reject) {
               console.log("get further list...");
               listAllKeys(allKeys, params, resolve, reject);
           } else {
+            console.log('S3 Keys Generated');
             resolve(allKeys);
           };
       };

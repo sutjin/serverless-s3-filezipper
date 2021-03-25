@@ -12,9 +12,6 @@
 # Happy Coding!
 
 service: s3-filestreamer
-# app and org for use with dashboard.serverless.com
-#app: your-app-name
-#org: your-org-name
 
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -36,12 +33,12 @@ provider:
         - Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "image-processor-nabil"
+            - "jimkourou"
             - "/*"
         - Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "image-processor-nabil"
+            - "jimkourou"
 
 functions:
   Zip:
