@@ -22,6 +22,12 @@ Deploy the app to your AWS account with
 npx sls deploy
 ```
 This will automatically create a lambda function called `s3-filestreamer` along with all the dependency needed.
+### AWS permissions
+
+Ensure that you have deployment permissions for AWS configured in the CLI before running deployment.
+
+__Before deployment__ make sure to modify `serverless.yml` to give permission to the S3 bucket.
+
 ## Executing in AWS
 You can run the project from the lambda function dashboard or via the `aws-cli`, but it will require this object to be passed:
 ```
