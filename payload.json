@@ -1,5 +1,8 @@
 {
-  "Bucket":"jimkourou",
-  "prefix":"output0101",
-  "zippedFileKey":"output0101.zip"
+  "Bucket": "s3_bucket",
+  "uploadBucket": "s3_bucket",
+  "chunk": 200,
+  "set": 1,
+  "prefix": "output0101",
+  "zippedFileKey": "output0101.zip"
 }

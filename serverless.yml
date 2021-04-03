@@ -21,7 +21,7 @@ provider:
   name: aws
   runtime: nodejs12.x
   region: us-west-2
-  timeout: 600
+  timeout: 900
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -33,12 +33,12 @@ provider:
         - Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "jimkourou"
+            - "<s3_bucket>"
             - "/*"
         - Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "jimkourou"
+            - "<s3_bucket>"
 
 functions:
   Zip:
