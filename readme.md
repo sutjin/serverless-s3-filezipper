@@ -52,3 +52,5 @@ npx sls offline
 ```
 aws lambda invoke --endpoint-url http://localhost:3002 --function-name s3-filestreamer-dev-Zip  --cli-binary-format raw-in-base64-out --payload file://payload.json response.json
 ```
+
+Inspired from [Gordon Johnston](https://dev.to/lineup-ninja/zip-files-on-s3-with-aws-lambda-and-node-1nm1) post
