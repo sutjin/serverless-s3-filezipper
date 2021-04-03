@@ -41,8 +41,8 @@ export const execute = async (event) => {
     if (event.set > s3FileDwnldStreams_chunks.length) {
       throw new Error(`set must be between 0 and ${s3FileDwnldStreams_chunks.length - 1}`);
     }
-    console.log(`manually processing chunk: ${event.set + 1} of ${s3FileDwnldStreams_chunks.length}`);
-    return streamFile(event, s3FileDwnldStreams_chunks[event.set], event.set);
+    console.log(`manually processing chunk: ${event.set} of ${s3FileDwnldStreams_chunks.length-1}`);
+    return await streamFile(event, s3FileDwnldStreams_chunks[event.set], event.set);
   } else {
     // Async foreach
     return asyncForEach(event, s3FileDwnldStreams_chunks, streamFile);
@@ -138,7 +138,7 @@ function asyncForEach(event, array, callback) {
   return new Promise(async (resolve, _) => {
     for (let index = 0; index < array.length; index++) {
       try {
-        console.log(`processing chunk: ${index + 1} of ${array.length}`);
+        console.log(`processing chunk: ${index} of ${array.length-1}`);
         await callback(event, array[index], index, array);
       } catch (err) {
         console.log(`Err in chunk: ${index}`);
