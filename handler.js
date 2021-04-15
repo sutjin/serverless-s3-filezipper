@@ -1,6 +1,6 @@
-import * as Archiver from 'archiver';
-import * as AWS from 'aws-sdk';
-import { Stream } from 'stream';
+const AWS = require('aws-sdk');
+const Archiver = require('archiver');
+const Stream = require('stream');
 
 // eslint-disable-next-line no-extend-native
 Object.defineProperty(Array.prototype, 'chunk', {
@@ -15,7 +15,7 @@ Object.defineProperty(Array.prototype, 'chunk', {
 
 const S3 = new AWS.S3();
 
-export const execute = async (event) => {
+export const execute = async (event, context) => {
   validateEvent(event);
 
   const params = {
@@ -23,29 +23,39 @@ export const execute = async (event) => {
     Prefix: event.prefix  // Can be your folder name
   };
 
-  const objectList = await asyncGetAllKeys(params);
+  console.log(`Getting keys from ${params.Bucket}/${params.Prefix}`);
 
-  const s3FileDwnldStreams = objectList.map(item => {
-    const stream = S3.getObject({ Key: item, Bucket: event.Bucket }).createReadStream();
-    return {
-      stream,
-      fileName: item,
-    };
-  });
+  try {
+    const objectList = await asyncGetAllKeys(params);
 
-  const s3FileDwnldStreams_chunks = s3FileDwnldStreams.chunk(event.chunk || 200);
+    const s3FileDwnldStreams = objectList.map(item => {
+      const stream = S3.getObject({ Key: item, Bucket: event.Bucket }).createReadStream();
+      return {
+        stream,
+        fileName: item,
+      };
+    });
 
-  console.log(`chunked for ${s3FileDwnldStreams_chunks.length}`);
+    const s3FileDwnldStreams_chunks = s3FileDwnldStreams.chunk(event.chunk || 200);
 
-  if (typeof event.set !== 'undefined') {
-    if (event.set > s3FileDwnldStreams_chunks.length) {
-      throw new Error(`set must be between 0 and ${s3FileDwnldStreams_chunks.length - 1}`);
+    console.log(`chunked for ${s3FileDwnldStreams_chunks.length}`);
+
+    if (typeof event.set !== 'undefined') {
+      if (event.set > s3FileDwnldStreams_chunks.length) {
+        throw new Error(`set must be between 0 and ${s3FileDwnldStreams_chunks.length - 1}`);
+      }
+      console.log(`manually processing chunk: ${event.set} of ${s3FileDwnldStreams_chunks.length-1}`);
+      return new Promise(async (resolve, _) => {
+        await streamFile(event, s3FileDwnldStreams_chunks[event.set], event.set);
+        resolve();
+      });
+    } else {
+      // Async foreach
+      return asyncForEach(event, s3FileDwnldStreams_chunks, streamFile);
     }
-    console.log(`manually processing chunk: ${event.set} of ${s3FileDwnldStreams_chunks.length-1}`);
-    return await streamFile(event, s3FileDwnldStreams_chunks[event.set], event.set);
-  } else {
-    // Async foreach
-    return asyncForEach(event, s3FileDwnldStreams_chunks, streamFile);
+  } catch (err) {
+    console.log(err);
+    throw new Error('Failed to get All Keys');
   }
 };
 
@@ -55,11 +65,34 @@ function validateEvent(event) {
   };
 };
 
-async function asyncGetAllKeys(params) {
-  return new Promise((resolve, reject) => {
+function asyncGetAllKeys(params) {
+  return new Promise(async (resolve, reject) => {
     const allKeys = [];
-    listAllKeys(allKeys, params, resolve, reject);
+    await listAllKeys(allKeys, params, resolve, reject);
   });
+};
+
+async function listAllKeys(allKeys, params, resolve, reject) {
+  console.log('fetching keys....');
+  try {
+    const data = await S3.listObjectsV2(params).promise();
+    const contents = data.Contents;
+    contents.forEach(function (content) {
+      allKeys.push(content.Key);
+    });
+
+    if (data.IsTruncated) {
+      params.ContinuationToken = data.NextContinuationToken;
+      console.log("get further list...");
+      await listAllKeys(allKeys, params, resolve, reject);
+    } else {
+      console.log('S3 Keys Generated');
+      resolve(allKeys);
+    };
+  } catch (err) {
+    console.error("ListAllKeyError");
+    console.log(err, err.stack); // an error occurred
+  }
 };
 
 async function streamFile (event, chunk, index) {
@@ -86,9 +119,9 @@ async function streamFile (event, chunk, index) {
     );
   });
 
-  // s3Upload.on("httpUploadProgress", progress => {
-  //   console.log(progress);
-  // });
+  s3Upload.on("httpUploadProgress", progress => {
+    console.log(progress);
+  });
 
   await new Promise((resolve, reject) => {
     streamPassThrough.on("close", resolve);
@@ -107,31 +140,7 @@ async function streamFile (event, chunk, index) {
     throw new Error(`${error.code} ${error.message} ${error.data}`);
   });
 
-  return await s3Upload.promise();
-};
-
-function listAllKeys(allKeys, params, resolve, reject) {
-  S3.listObjectsV2(params, function (err, data) {
-      if (err) {
-          console.error("ListAllKeyError");
-          console.log(err, err.stack); // an error occurred
-          reject(err);
-      } else {
-          var contents = data.Contents;
-          contents.forEach(function (content) {
-              allKeys.push(content.Key);
-          });
-
-          if (data.IsTruncated) {
-              params.ContinuationToken = data.NextContinuationToken;
-              console.log("get further list...");
-              listAllKeys(allKeys, params, resolve, reject);
-          } else {
-            console.log('S3 Keys Generated');
-            resolve(allKeys);
-          };
-      };
-  });
+  await s3Upload.promise();
 };
 
 function asyncForEach(event, array, callback) {

@@ -33,12 +33,21 @@ provider:
         - Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "<s3_bucket>"
+            - "jimkourou"
             - "/*"
         - Fn::Join:
           - ""
           - - "arn:aws:s3:::"
-            - "<s3_bucket>"
+            - "jimkourou"
+        - Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "jimkourou-upload"
+            - "/*"
+        - Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "jimkourou-upload"
 
 functions:
   Zip:
